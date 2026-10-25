@@ -1,0 +1,836 @@
+
+openapi: 3.0.3
+
+info:
+  title: API Layanan Desa Mandiri
+  version: 1.0.0
+  description: Dokumentasi REST API untuk layanan laporan dan informasi warga desa.
+  license:
+    name: Proprietary
+    url: https://example.com/license
+    
+servers:
+  - url: http://127.0.0.1:8000/api
+    description: Server lokal Laravel
+
+tags:
+  - name: Reports
+    description: Pengelolaan laporan warga
+  - name: Citizen
+    description: Registrasi dan autentikasi warga
+  - name: Daily Notes
+    description: Catatan harian
+  - name: Teams
+    description: Regu petugas
+  - name: Emergency Contacts
+    description: Kontak darurat
+
+security:
+  - bearerAuth: []
+
+paths:
+  /reports:
+    get:
+      tags: [Reports]
+      summary: Menampilkan daftar laporan
+      operationId: getReports
+      security: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter laporan berdasarkan status.
+          schema:
+            type: string
+            enum: [menunggu, diproses, selesai, ditolak]
+        - name: category
+          in: query
+          description: Filter laporan berdasarkan kategori.
+          schema:
+            type: string
+        - name: dusun
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Urutan daftar laporan.
+          schema:
+            type: string
+            enum: [terbaru, terlama, upvotes]
+            default: terbaru
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Daftar laporan berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+        '400':
+          $ref: '#/components/responses/Error'
+
+    post:
+      tags: [Reports]
+      summary: Membuat laporan baru
+      operationId: createReport
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportInput'
+            example:
+              title: Jalan rusak
+              category: Infrastruktur
+              description: Jalan berlubang di dekat balai desa
+              dusun: Dusun Krajan
+              rtRw: RT 01 / RW 01
+              priority: sedang
+              isAnonymous: false
+      responses:
+        '201':
+          description: Laporan berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /reports/stats:
+    get:
+      tags: [Reports]
+      summary: Mengambil statistik laporan
+      operationId: getReportStats
+      security: []
+      responses:
+        '200':
+          description: Statistik laporan berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error'
+
+  /reports/export:
+    get:
+      tags: [Reports]
+      summary: Mengekspor laporan
+      operationId: exportReports
+      security: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, json]
+            default: csv
+      responses:
+        '200':
+          description: File laporan berhasil dibuat
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: "ID Tiket,Judul,Kategori,Status"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+        '400':
+          $ref: '#/components/responses/Error'
+
+  /reports/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+
+    get:
+      tags: [Reports]
+      summary: Mengambil detail laporan
+      operationId: getReportById
+      security: []
+      responses:
+        '200':
+          description: Detail laporan ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Reports]
+      summary: Memperbarui laporan
+      operationId: replaceReport
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportUpdate'
+      responses:
+        '200':
+          description: Laporan berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    patch:
+      tags: [Reports]
+      summary: Memperbarui sebagian data laporan
+      operationId: updateReport
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportUpdate'
+      responses:
+        '200':
+          description: Laporan berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Reports]
+      summary: Menghapus laporan
+      operationId: deleteReport
+      security: []
+      responses:
+        '200':
+          description: Laporan berhasil dihapus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports/{id}/verify:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Reports]
+      summary: Memverifikasi laporan dan menetapkan tim
+      operationId: verifyReport
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignedTeam]
+              properties:
+                assignedTeam:
+                  type: string
+                notes:
+                  type: string
+                status:
+                  type: string
+                priority:
+                  type: string
+      responses:
+        '200':
+          description: Laporan berhasil diverifikasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /reports/{id}/upvote:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Reports]
+      summary: Menambah atau membatalkan dukungan laporan
+      operationId: toggleReportUpvote
+      security: []
+      responses:
+        '200':
+          description: Dukungan laporan berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports/{id}/comments:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Reports]
+      summary: Menambahkan komentar laporan
+      operationId: addReportComment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                author:
+                  type: string
+                role:
+                  type: string
+                text:
+                  type: string
+                  maxLength: 1000
+            example:
+              author: Warga Desa
+              role: warga
+              text: Semoga segera diperbaiki.
+      responses:
+        '200':
+          description: Komentar berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /teams:
+    get:
+      tags: [Teams]
+      summary: Menampilkan daftar regu petugas
+      operationId: getTeams
+      security: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter regu berdasarkan status.
+          schema:
+            type: string
+            enum: [aktif, tidak_aktif, bertugas]
+        - name: sort
+          in: query
+          description: Urutan daftar regu.
+          schema:
+            type: string
+            enum: [nama, anggota]
+            default: nama
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Daftar regu petugas berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error'
+
+  /teams/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      tags: [Teams]
+      summary: Memperbarui data regu petugas
+      operationId: updateTeam
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                currentLocation:
+                  type: string
+                leader:
+                  type: string
+                activeMembers:
+                  type: integer
+                vehicle:
+                  type: string
+      responses:
+        '200':
+          description: Data regu berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /daily-notes:
+    get:
+      tags: [Daily Notes]
+      summary: Menampilkan catatan harian
+      operationId: getDailyNotes
+      security: []
+      responses:
+        '200':
+          description: Daftar catatan harian berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error'
+
+    post:
+      tags: [Daily Notes]
+      summary: Menambahkan catatan harian
+      operationId: createDailyNote
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  maxLength: 1000
+                author:
+                  type: string
+            example:
+              text: Kegiatan gotong royong dimulai pukul 08.00.
+              author: Admin Desa
+      responses:
+        '201':
+          description: Catatan harian berhasil dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /emergency-contacts:
+    get:
+      tags: [Emergency Contacts]
+      summary: Menampilkan kontak darurat
+      operationId: getEmergencyContacts
+      security: []
+      responses:
+        '200':
+          description: Daftar kontak darurat berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error'
+
+  /citizen/login:
+    post:
+      tags: [Citizen]
+      summary: Login warga menggunakan nomor telepon dan PIN
+      operationId: citizenLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+            example:
+              phone: "081234567890"
+              password: "123456"
+      responses:
+        '200':
+          description: Login berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /citizen/register:
+    post:
+      tags: [Citizen]
+      summary: Mendaftarkan akun warga
+      operationId: registerCitizen
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, dusun]
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                phone:
+                  type: string
+                  maxLength: 30
+                dusun:
+                  type: string
+                  maxLength: 100
+                rtRw:
+                  type: string
+                  maxLength: 50
+                role:
+                  type: string
+                  maxLength: 100
+                password:
+                  type: string
+                  minLength: 4
+            example:
+              name: Budi Santoso
+              phone: "081234567890"
+              dusun: Dusun Krajan
+              rtRw: RT 01 / RW 01
+              password: "123456"
+      responses:
+        '201':
+          description: Pendaftaran berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /citizen/demo-accounts:
+    get:
+      tags: [Citizen]
+      summary: Menampilkan akun demo tanpa kata sandi
+      operationId: getCitizenDemoAccounts
+      security: []
+      responses:
+        '200':
+          description: Daftar akun demo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error'
+
+  /citizen/me:
+    get:
+      tags: [Citizen]
+      summary: Mengambil profil warga
+      operationId: getCitizenProfile
+      security: []
+      parameters:
+        - name: phone
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profil warga berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Nomor halaman, dimulai dari 1.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Jumlah item per halaman (maksimal 100).
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      example: 10
+    Id:
+      name: id
+      in: path
+      required: true
+      description: ID resource
+      schema:
+        type: string
+      example: "1"
+
+  schemas:
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+        title:
+          type: string
+          example: Jalan rusak
+        category:
+          type: string
+          example: Infrastruktur
+        status:
+          type: string
+          example: menunggu
+        priority:
+          type: string
+          example: sedang
+        description:
+          type: string
+        dusun:
+          type: string
+        rtRw:
+          type: string
+        location:
+          type: string
+        reporterName:
+          type: string
+        reporterPhone:
+          type: string
+        isAnonymous:
+          type: boolean
+        photoUrl:
+          type: string
+        coordinates:
+          type: object
+          additionalProperties: true
+        assignedTeam:
+          type: string
+        notes:
+          type: string
+        upvotes:
+          type: integer
+        createdAt:
+          type: string
+          example: "2026-10-25T09:00:00Z"
+      additionalProperties: true
+
+    ReportInput:
+      type: object
+      required: [title, category, description]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        category:
+          type: string
+        description:
+          type: string
+        dusun:
+          type: string
+        rtRw:
+          type: string
+        location:
+          type: string
+        priority:
+          type: string
+        reporterName:
+          type: string
+        reporterPhone:
+          type: string
+        phone:
+          type: string
+        isAnonymous:
+          type: boolean
+        photoUrl:
+          type: string
+        coordinates:
+          type: object
+          additionalProperties: true
+
+    ReportUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        category:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        location:
+          type: string
+        dusun:
+          type: string
+        rtRw:
+          type: string
+        description:
+          type: string
+        assignedTeam:
+          type: string
+        notes:
+          type: string
+        rejectionReason:
+          type: string
+        reporterName:
+          type: string
+        reporterPhone:
+          type: string
+        phone:
+          type: string
+        isAnonymous:
+          type: boolean
+        photoUrl:
+          type: string
+
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Laporan berhasil dihapus
+        id:
+          type: string
+          example: "1"
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Data tidak ditemukan
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Data yang diberikan tidak valid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        user:
+          type: object
+          additionalProperties: true
+
+  responses:
+    Error:
+      description: Terjadi kesalahan pada permintaan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            message: Permintaan tidak dapat diproses
+
+    NotFound:
+      description: Data tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: Data tidak ditemukan
+
+    ValidationError:
+      description: Validasi input gagal
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+          example:
+            message: Data yang diberikan tidak valid.
+            errors:
+              title:
+                - Judul laporan wajib diisi.
