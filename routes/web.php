@@ -12,3 +12,7 @@ Route::get('/admin', [PageController::class, 'dasbor'])->name('dasbor');
 Route::get('/dasbor', function () {
     return redirect()->route('dasbor');
 });
+
+Route::get('/api-portal', function () {
+    return view('api-portal');
+})->name('api-portal');
