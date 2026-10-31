@@ -194,11 +194,11 @@
             <div class="actions">
                 <a class="btn" href="/">Website Desa</a>
                 <a class="btn outline"
-                   href="/docs"
-                   onclick="return false;"
-                   title="Alamat dokumentasi perlu disesuaikan">
-                   Dokumentasi API
-                </a>
+                href="/docs/openapi.yaml"
+                target="_blank"
+                rel="noopener noreferrer">
+                Dokumentasi API
+            </a>
             </div>
 
             <footer id="tentang">
