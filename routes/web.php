@@ -14,7 +14,6 @@ Route::get('/dasbor', function () {
 });
 
 
-
 Route::get('/docs/openapi.yaml', function () {
     $path = app_path('docs/openapi.yaml');
 
