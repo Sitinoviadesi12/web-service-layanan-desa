@@ -13,6 +13,15 @@ Route::get('/dasbor', function () {
     return redirect()->route('dasbor');
 });
 
-Route::get('/api-portal', function () {
-    return view('api-portal');
-})->name('api-portal');
+
+Route::get('/docs/openapi.yaml', function () {
+    $path = app_path('docs/openapi.yaml');
+
+    abort_unless(file_exists($path), 404);
+
+    return response(
+        file_get_contents($path),
+        200,
+        ['Content-Type' => 'application/yaml; charset=UTF-8']
+    );
+})->name('api.docs');
