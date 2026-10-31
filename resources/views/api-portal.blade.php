@@ -193,12 +193,12 @@
 
             <div class="actions">
                 <a class="btn" href="/">Website Desa</a>
-                <a class="btn outline"
-                href="/docs/openapi.yaml"
-                target="_blank"
-                rel="noopener noreferrer">
-                Dokumentasi API
-            </a>
+               <a class="btn outline"
+   href="/docs/openapi.yaml"
+   target="_blank"
+   rel="noopener noreferrer">
+    Dokumentasi API
+</a>
             </div>
 
             <footer id="tentang">
