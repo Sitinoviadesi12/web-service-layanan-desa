@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -83,10 +82,12 @@
         code { font-weight: bold; overflow-wrap: anywhere; }
         .description { margin-left: auto; color: #64756c; }
         .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 25px;
+             display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 28px auto;
+    width: 100%;
+
         }
         .stat {
             background: #087b43;
@@ -135,14 +136,8 @@
 <body>
     <header>
         <div>
-            <h2>🏡 Layanan Desa Mandiri</h2>
-            <p>API Pengaduan Warga Desa</p>
+            <h2>Layanan Desa Mandiri</h2>
         </div>
-        <nav>
-            <a href="#beranda">Beranda</a>
-            <a href="#endpoint">Endpoint</a>
-            <a href="#tentang">Tentang</a>
-        </nav>
     </header>
 
     <main id="beranda">
@@ -190,15 +185,19 @@
                 <code>/api/emergency-contacts</code>
                 <span class="description">Kontak darurat</span>
             </div>
+            <div class="stats">
+    <div class="stat">
+        <strong id="total-laporan">-</strong>
+        <span>TOTAL LAPORAN WARGA</span>
+    </div>
 
+    <div class="stat">
+        <strong id="laporan-terverifikasi">-</strong>
+        <span>LAPORAN TERVERIFIKASI</span>
+    </div>
+</div>
             <div class="actions">
                 <a class="btn" href="/">Website Desa</a>
-               <a class="btn outline"
-   href="/docs/openapi.yaml"
-   target="_blank"
-   rel="noopener noreferrer">
-    Dokumentasi API
-</a>
             </div>
 
             <footer id="tentang">
@@ -207,5 +206,31 @@
             </footer>
         </section>
     </main>
+
+<script>
+    async function loadReportStats() {
+        try {
+            const response = await fetch('/api/reports/stats');
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil statistik');
+            }
+
+            const result = await response.json();
+            const data = result.data ?? result;
+
+            document.getElementById('total-laporan').textContent =
+                data.total_reports ?? data.total ?? 0;
+
+            document.getElementById('laporan-terverifikasi').textContent =
+                data.verified_reports ?? data.verified ?? 0;
+        } catch (error) {
+            console.error('Gagal memuat statistik laporan:', error);
+        }
+    }
+
+    loadReportStats();
+</script>
+
 </body>
 </html>
